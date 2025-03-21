@@ -7,7 +7,16 @@ const Seat = require('./models/Seat');
 const Show = require('./models/Show');
 const BookingService = require('./services/BookingService');
 
-// Admin adds movie & show
+// Payment Strategies
+const CreditCardPayment = require('./strategies/CreditCardPayment');
+const UpiPayment = require('./strategies/UpiPayment');
+const WalletPayment = require('./strategies/WalletPayment');
+
+// Notification Observers
+const EmailNotifier = require('./observers/EmailNotifier');
+const SmsNotifier = require('./observers/SmsNotifier');
+
+// ----- SETUP -----
 let admin = new Admin(1, 'Admin', 'admin@mtb.com', '12345');
 let movies = [];
 let theaters = [];
@@ -27,7 +36,11 @@ theaters.push(theater);
 let show = new Show(1, movie, '2025-03-22 10:00', '2025-03-22 12:30', screen);
 admin.createShow(shows, show);
 
-// ----- Concurrency Simulation -----
+// ----- Add Observers -----
+BookingService.addObserver(new EmailNotifier());
+BookingService.addObserver(new SmsNotifier());
+
+// ----- USERS -----
 const user1 = new User(2, 'John', 'john@gmail.com', '98765');
 const user2 = new User(3, 'Alice', 'alice@gmail.com', '45678');
 
@@ -35,9 +48,9 @@ const user2 = new User(3, 'Alice', 'alice@gmail.com', '45678');
 let selectedSeats = [screen.seats[0], screen.seats[1]];
 
 // Booking attempt function
-async function attemptBooking(user, seats) {
+async function attemptBooking(user, seats, paymentStrategy) {
   try {
-    let booking = await BookingService.createBooking(user, show, seats);
+    let booking = await BookingService.createBooking(user, show, seats, paymentStrategy);
     console.log(`${user.name} Booking Successful:`, booking.bookingId);
   } catch (err) {
     console.log(`${user.name} Booking Failed: ${err.message}`);
@@ -49,8 +62,8 @@ async function simulate() {
   console.log('\n--- Starting Concurrent Booking Simulation ---\n');
 
   await Promise.all([
-    attemptBooking(user1, selectedSeats),
-    attemptBooking(user2, selectedSeats)
+    attemptBooking(user1, selectedSeats, new CreditCardPayment()),
+    attemptBooking(user2, selectedSeats, new UpiPayment())
   ]);
 
   console.log('\n--- Simulation Complete ---');
