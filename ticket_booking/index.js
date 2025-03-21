@@ -71,6 +71,13 @@ async function simulate() {
   screen.seats.forEach(seat => {
     console.log(`Seat ${seat.seatNumber}: ${seat.isBooked ? 'BOOKED' : 'AVAILABLE'}`);
   });
+
+  BookingService.bookings.forEach(booking => {
+    console.log(`User: ${booking.user.name}`);
+    console.log(`Booking ID: ${booking.bookingId}`);
+    console.log(`Seats Booked: ${booking.seats.map(seat => seat.seatNumber).join(', ')}`);
+    console.log('--------------------------');
+  });
 }
 
 simulate();
